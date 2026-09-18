@@ -13,6 +13,7 @@ import { stateDir } from "./paths.js";
 export function cubeViewerBinary(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    join(here, "..", "..", "compositor", "bin", "cubemux-cube-viewer"),
     join(here, "..", "..", "cube-viewer", "target", "release", "cubemux-cube-viewer"),
     join(here, "..", "bin", "cubemux-cube-viewer"),
     join(process.cwd(), "packages", "cube-viewer", "target", "release", "cubemux-cube-viewer"),

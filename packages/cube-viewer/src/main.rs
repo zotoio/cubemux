@@ -38,6 +38,7 @@ struct App {
     last_mouse: (f64, f64),
     active_face: Option<u8>,
     last_capture: Instant,
+    exit_after_unfold: bool,
     args: Args,
 }
 
@@ -56,6 +57,7 @@ impl App {
             last_mouse: (0.0, 0.0),
             active_face: None,
             last_capture: Instant::now() - Duration::from_secs(1),
+            exit_after_unfold: false,
             args,
         }
     }
@@ -183,7 +185,11 @@ impl ApplicationHandler for App {
                 self.persist_rotation();
             }
             WindowEvent::RedrawRequested => {
+                let prev_target_fold = self.target_fold;
                 self.sync_from_disk();
+                if prev_target_fold > 0.5 && self.target_fold <= 0.5 {
+                    self.exit_after_unfold = true;
+                }
 
                 let step = 0.04;
                 if self.fold_t < self.target_fold {
@@ -210,7 +216,7 @@ impl ApplicationHandler for App {
                     window.request_redraw();
                 }
 
-                if self.target_fold == 0.0 && self.fold_t <= 0.01 {
+                if self.exit_after_unfold && self.target_fold == 0.0 && self.fold_t <= 0.01 {
                     event_loop.exit();
                 }
             }

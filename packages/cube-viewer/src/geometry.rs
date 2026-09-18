@@ -24,7 +24,6 @@ pub fn grid_position(index: u8) -> Vec3 {
 
 pub fn cube_transform(index: u8) -> Mat4 {
     let n = face_normal(index);
-    let center = n * 0.5;
     let up = if index == 4 {
         Vec3::new(0.0, 0.0, -1.0)
     } else if index == 5 {
@@ -32,7 +31,14 @@ pub fn cube_transform(index: u8) -> Mat4 {
     } else {
         Vec3::Y
     };
-    let model = Mat4::look_at_rh(center, Vec3::ZERO, up);
+    let right = up.cross(n).normalize();
+    let corrected_up = n.cross(right);
+    let model = Mat4::from_cols(
+        right.extend(0.0),
+        corrected_up.extend(0.0),
+        n.extend(0.0),
+        (n * 0.5).extend(1.0),
+    );
     Mat4::from_scale(Vec3::splat(0.95)) * model
 }
 

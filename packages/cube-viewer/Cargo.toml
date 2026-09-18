@@ -19,3 +19,4 @@ fontdue = "0.9"
 glam = "0.29"
 bytemuck = { version = "1", features = ["derive"] }
 clap = { version = "4", features = ["derive"] }
+libc = "0.2"

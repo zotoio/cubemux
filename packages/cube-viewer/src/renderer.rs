@@ -54,6 +54,8 @@ struct Uniforms {
 pub struct GpuFace {
     texture: wgpu::Texture,
     bind_group: wgpu::BindGroup,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
 }
 
 pub struct Renderer {
@@ -62,8 +64,6 @@ pub struct Renderer {
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     pipeline: wgpu::RenderPipeline,
-    uniform_buffer: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
     sampler: wgpu::Sampler,
     faces: Vec<GpuFace>,
     vertex_buffer: wgpu::Buffer,
@@ -137,13 +137,6 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(SHADER.into()),
         });
 
-        let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("uniforms"),
-            size: std::mem::size_of::<Uniforms>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
-
         let uniform_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("uniform_layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -155,15 +148,6 @@ impl Renderer {
                     min_binding_size: None,
                 },
                 count: None,
-            }],
-        });
-
-        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("uniform_bg"),
-            layout: &uniform_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
             }],
         });
 
@@ -269,7 +253,26 @@ impl Renderer {
                         },
                     ],
                 });
-                GpuFace { texture, bind_group }
+                let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                    label: Some("uniforms"),
+                    size: std::mem::size_of::<Uniforms>() as u64,
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false,
+                });
+                let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("uniform_bg"),
+                    layout: &uniform_layout,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: uniform_buffer.as_entire_binding(),
+                    }],
+                });
+                GpuFace {
+                    texture,
+                    bind_group,
+                    uniform_buffer,
+                    uniform_bind_group,
+                }
             })
             .collect();
 
@@ -281,8 +284,6 @@ impl Renderer {
             queue,
             config,
             pipeline,
-            uniform_buffer,
-            uniform_bind_group,
             sampler,
             faces,
             vertex_buffer,
@@ -415,13 +416,13 @@ impl Renderer {
                     alpha,
                     _pad: [0.0, 0.0, 0.0],
                 };
+                let face = &self.faces[i];
                 self.queue.write_buffer(
-                    &self.uniform_buffer,
+                    &face.uniform_buffer,
                     0,
                     bytemuck::bytes_of(&uniforms),
                 );
-                let face = &self.faces[i];
-                pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+                pass.set_bind_group(0, &face.uniform_bind_group, &[]);
                 pass.set_bind_group(1, &face.bind_group, &[]);
                 pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                 pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);

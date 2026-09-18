@@ -422,6 +422,7 @@ dependencies = [
  "clap",
  "fontdue",
  "glam",
+ "libc",
  "pollster",
  "serde",
  "serde_json",
