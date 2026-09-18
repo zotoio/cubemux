@@ -1,0 +1,47 @@
+# cubemux example configuration
+# Each of the 6 faces is independently typed: agent | shell
+
+[session]
+project = "cubemux-demo"
+
+# Default layout:
+#   [0 Lead]  [1 Impl A] [2 Impl B]
+#   [3 Review][4 Test]   [5 Ops/shell]
+
+[[faces]]
+index = 0
+name = "Lead"
+type = "agent"
+role = "lead"
+prompt = "You are the lead agent coordinating the team."
+
+[[faces]]
+index = 1
+name = "Impl A"
+type = "agent"
+role = "implementer-a"
+
+[[faces]]
+index = 2
+name = "Impl B"
+type = "agent"
+role = "implementer-b"
+
+[[faces]]
+index = 3
+name = "Review"
+type = "agent"
+role = "reviewer"
+
+[[faces]]
+index = 4
+name = "Test"
+type = "agent"
+role = "tester"
+
+[[faces]]
+index = 5
+name = "Ops"
+type = "shell"
+role = "ops"
+# command = "/bin/bash"  # optional; defaults to $SHELL

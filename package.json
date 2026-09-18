@@ -1,0 +1,18 @@
+{
+  "name": "cubemux",
+  "version": "0.1.0",
+  "private": true,
+  "description": "tmux-style multi-agent cockpit with foldable cube compositor",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "build": "pnpm build:viewer && pnpm -r run build",
+    "build:viewer": "cd packages/cube-viewer && cargo build --release && mkdir -p ../compositor/bin && cp -f target/release/cubemux-cube-viewer ../compositor/bin/",
+    "test": "pnpm -r run test",
+    "typecheck": "pnpm -r run typecheck",
+    "smoke": "node scripts/smoke.mjs"
+  }
+}

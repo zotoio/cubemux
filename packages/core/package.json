@@ -1,0 +1,41 @@
+{
+  "name": "@cubemux/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "cubemux session plane, config, and face management",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./agent-face": {
+      "types": "./dist/agent-face.d.ts",
+      "import": "./dist/agent-face.js"
+    }
+  },
+  "bin": {
+    "cubemux-agent-face": "./dist/agent-face.js",
+    "cubemux-ipc-daemon": "./dist/ipc-daemon.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@cursor/sdk": "1.0.26",
+    "smol-toml": "^1.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
