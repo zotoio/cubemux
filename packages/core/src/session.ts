@@ -47,7 +47,7 @@ export class CubemuxSession {
 
   get socketPath(): string {
     const cfg = this.config;
-    return cfg.session.socket ?? tmuxSocketPath(cfg.session.project);
+    return cfg.session.socket ?? tmuxSocketPath(this.projectRoot, cfg.session.project);
   }
 
   get windowName(): string {
@@ -103,7 +103,12 @@ export class CubemuxSession {
     ensureStateDir(this.projectRoot);
     mkdirSync(dirname(this.socketPath), { recursive: true });
 
-    createGridSession(this.socketPath, SESSION_NAME, this.windowName);
+    createGridSession(
+      this.socketPath,
+      SESSION_NAME,
+      this.windowName,
+      this.projectRoot,
+    );
     const paneIds = listPaneIds(this.socketPath, this.windowName);
 
     if (paneIds.length !== 6) {
@@ -274,6 +279,10 @@ export class CubemuxSession {
     return join(distDir, "agent-face.js");
   }
 
+  private shellQuote(value: string): string {
+    return `'${value.replace(/'/g, `'\\''`)}'`;
+  }
+
   private async spawnFace(face: FaceConfig, paneId: string): Promise<void> {
     const title = `cubemux:${face.index}:${face.name}`;
     runTmux(this.socketPath, [
@@ -286,15 +295,24 @@ export class CubemuxSession {
 
     if (face.type === "shell") {
       const shell = face.command ?? process.env.SHELL ?? "/bin/bash";
-      const cmd = `export PS1='[face ${face.index}] \\w $ '; exec ${shell}`;
+      const cmd = `export PS1='[face ${face.index}] \\w $ '; exec ${this.shellQuote(shell)}`;
       sendKeys(this.socketPath, paneId, cmd);
       return;
     }
 
     const runner = this.agentFaceRunnerPath();
-    const promptArg = face.prompt ? ` --prompt ${JSON.stringify(face.prompt)}` : "";
-    const cmd = `node ${JSON.stringify(runner)} --face ${face.index} --name ${JSON.stringify(face.name)}${promptArg}`;
-    sendKeys(this.socketPath, paneId, cmd);
+    const parts = [
+      "node",
+      this.shellQuote(runner),
+      "--face",
+      String(face.index),
+      "--name",
+      this.shellQuote(face.name),
+    ];
+    if (face.prompt) {
+      parts.push("--prompt", this.shellQuote(face.prompt));
+    }
+    sendKeys(this.socketPath, paneId, parts.join(" "));
   }
 
   private startIpcDaemon(): void {

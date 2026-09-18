@@ -45,6 +45,7 @@ export function createGridSession(
   socketPath: string,
   sessionName: string,
   windowName: string,
+  workingDirectory: string,
 ): void {
   runTmux(socketPath, [
     "new-session",
@@ -53,6 +54,8 @@ export function createGridSession(
     sessionName,
     "-n",
     windowName,
+    "-c",
+    workingDirectory,
   ]);
 
   // Build 3 columns x 2 rows:

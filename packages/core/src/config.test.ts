@@ -60,6 +60,14 @@ describe("config parsing", () => {
     ).toThrow(/invalid type/i);
   });
 
+  it("rejects invalid face types in config files", () => {
+    expect(() =>
+      configFromObject({
+        faces: [{ index: 0, name: "Bad", type: "docker" }],
+      }),
+    ).toThrow(/invalid type/i);
+  });
+
   it("rejects out-of-range face indices", () => {
     expect(() =>
       normalizeFaces([

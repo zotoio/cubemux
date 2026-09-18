@@ -119,8 +119,7 @@ async function runIdle(options: AgentFaceOptions): Promise<void> {
   console.log("");
   console.log("Face idle. Press Ctrl+C to exit.");
 
-  await new Promise<void>((resolve) => {
-    process.on("SIGINT", () => resolve());
+  await new Promise<void>(() => {
     process.stdin.resume();
   });
 }

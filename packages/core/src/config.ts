@@ -63,7 +63,16 @@ function parseRawConfig(raw: Record<string, unknown>): CubemuxConfig {
     const index =
       typeof face.index === "number" ? face.index : Number(face.index ?? i);
     const typeRaw = face.type;
-    const type = isFaceType(typeRaw) ? typeRaw : defaultFaceType(index);
+    let type: FaceType;
+    if (typeRaw === undefined) {
+      type = defaultFaceType(index);
+    } else if (!isFaceType(typeRaw)) {
+      throw new Error(
+        `Face ${index} has invalid type "${String(typeRaw)}". Use "agent" or "shell".`,
+      );
+    } else {
+      type = typeRaw;
+    }
     const defaults = defaultFaces()[index] ?? {
       index,
       name: `Face ${index}`,

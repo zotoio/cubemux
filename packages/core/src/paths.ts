@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -17,9 +18,13 @@ export function ipcSocketPath(projectRoot: string, project: string): string {
   return join(stateDir(projectRoot), `${project}.ipc.sock`);
 }
 
-export function tmuxSocketPath(project: string): string {
+export function tmuxSocketPath(projectRoot: string, project: string): string {
   const runtimeDir = process.env.XDG_RUNTIME_DIR ?? join(homedir(), ".cache");
-  return join(runtimeDir, "cubemux", `cubemux-${project}.sock`);
+  const rootKey = createHash("sha256")
+    .update(resolve(projectRoot))
+    .digest("hex")
+    .slice(0, 12);
+  return join(runtimeDir, "cubemux", `cubemux-${project}-${rootKey}.sock`);
 }
 
 export function defaultConfigPath(projectRoot: string): string {
