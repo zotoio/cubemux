@@ -64,6 +64,7 @@ export interface CubemuxStatus {
   foldProgress: number;
   rotation: RotationState;
   viewerRunning: boolean;
+  viewerLog?: string;
   ipcSocket?: string;
 }
 

@@ -35,6 +35,7 @@ import {
   isViewerRunning,
   startCubeViewer,
   stopCubeViewer,
+  viewerLogFile,
 } from "./viewer.js";
 import type { RotationState } from "./types.js";
 
@@ -96,6 +97,7 @@ export class CubemuxSession {
       foldProgress: state?.foldProgress ?? 0,
       rotation: state?.rotation ?? defaultRotation(),
       viewerRunning: isViewerRunning(this.projectRoot, cfg.session.project),
+      viewerLog: viewerLogFile(this.projectRoot, cfg.session.project),
       ipcSocket: state?.ipcSocket ?? this.ipcPath,
     };
   }
@@ -268,7 +270,7 @@ export class CubemuxSession {
       foldProgress: 0,
       viewerPid,
       message:
-        "Folding into cube view. tmux grid remains active; use cubemux attach for flat grid.",
+        `Folding into cube view. tmux grid remains active; use cubemux attach for flat grid. Viewer log: ${viewerLogFile(this.projectRoot, this.config.session.project)}`,
     };
   }
 

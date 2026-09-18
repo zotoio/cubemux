@@ -57,7 +57,26 @@ tmux-style multi-agent cockpit: a **3×2 grid of faces** that fold into a **rota
 
 ## Install
 
-Requires **Node ≥ 22.13**, **pnpm**, **tmux**, **Rust ≥ 1.83** (for cube viewer), and a monospace font (e.g. `fonts-dejavu-core`).
+Requires **Node ≥ 22.13**, **pnpm**, **tmux**, and a monospace font (e.g. `fonts-dejavu-core`).
+
+### Cube viewer runtime (Linux)
+
+| Dependency | Notes |
+|------------|-------|
+| **Rust ≥ 1.86** | `wayland-protocols` crate needs 1.86+; install via `rustup default stable` |
+| `libxkbcommon-x11-0` | X11 keyboard support for winit |
+| `mesa-vulkan-drivers` | Software Vulkan (lavapipe) on GPU-less boxes |
+| `fonts-dejavu-core` | Terminal text rasterization |
+
+On **GPU-less** VMs (Grok Bot box, no `/dev/dri`), cubemux auto-sets software rendering when spawning the viewer:
+
+```bash
+WGPU_BACKEND=gl
+LIBGL_ALWAYS_SOFTWARE=1
+VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json   # if present
+```
+
+Viewer stderr/stdout is appended to **`.cubemux/<project>.viewer.log`** for diagnosis.
 
 ```bash
 pnpm install

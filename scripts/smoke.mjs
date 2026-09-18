@@ -135,6 +135,20 @@ type = "shell"
   );
   if (!folded.folded) throw new Error("status.folded should be true after fold");
 
+  if (folded.viewerRunning) {
+    execFileSync("sleep", ["1"]);
+    const afterFold = JSON.parse(
+      run("node", [cli, "-C", configPath, "--cwd", tmp, "status", "--json"], {
+        cwd: root,
+      }),
+    );
+    if (!afterFold.viewerRunning) {
+      throw new Error(
+        `viewer exited early — check ${afterFold.viewerLog ?? ".cubemux/smoke-test.viewer.log"}`,
+      );
+    }
+  }
+
   run("node", [
     cli,
     "-C",

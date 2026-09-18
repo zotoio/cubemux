@@ -53,5 +53,7 @@ export {
   isViewerRunning,
   startCubeViewer,
   stopCubeViewer,
+  viewerEnv,
+  viewerLogFile,
   viewerPidFile,
 } from "./viewer.js";

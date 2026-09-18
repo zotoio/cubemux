@@ -1,4 +1,10 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  openSync,
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+} from "node:fs";
 import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +29,37 @@ export function cubeViewerBinary(): string {
 
 export function viewerPidFile(projectRoot: string, project: string): string {
   return join(stateDir(projectRoot), `${project}.viewer.pid`);
+}
+
+export function viewerLogFile(projectRoot: string, project: string): string {
+  return join(stateDir(projectRoot), `${project}.viewer.log`);
+}
+
+/** Env overrides for GPU-less / software-rendering boxes (Grok Bot, CI VMs). */
+export function viewerEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const env = { ...base };
+  const hasGpu = existsSync("/dev/dri");
+  if (!hasGpu) {
+    if (!env.WGPU_BACKEND) {
+      env.WGPU_BACKEND = "gl";
+    }
+    if (!env.LIBGL_ALWAYS_SOFTWARE) {
+      env.LIBGL_ALWAYS_SOFTWARE = "1";
+    }
+    const lvpCandidates = [
+      "/usr/share/vulkan/icd.d/lvp_icd.x86_64.json",
+      "/usr/share/vulkan/icd.d/lvp_icd.json",
+    ];
+    if (!env.VK_ICD_FILENAMES) {
+      for (const icd of lvpCandidates) {
+        if (existsSync(icd)) {
+          env.VK_ICD_FILENAMES = icd;
+          break;
+        }
+      }
+    }
+  }
+  return env;
 }
 
 export function isViewerRunning(projectRoot: string, project: string): boolean {
@@ -50,10 +87,16 @@ export function startCubeViewer(projectRoot: string, project: string): number {
   }
   const binary = cubeViewerBinary();
   const pidFile = viewerPidFile(projectRoot, project);
+  const logPath = viewerLogFile(projectRoot, project);
+  appendFileSync(
+    logPath,
+    `\n--- cubemux-cube-viewer ${new Date().toISOString()} ---\n`,
+  );
+  const logFd = openSync(logPath, "a");
   const child = spawn(binary, ["--cwd", projectRoot], {
     detached: true,
-    stdio: "ignore",
-    env: { ...process.env },
+    stdio: ["ignore", logFd, logFd],
+    env: viewerEnv(),
   });
   child.unref();
   if (!child.pid) {
