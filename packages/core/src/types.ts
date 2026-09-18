@@ -31,6 +31,14 @@ export interface FaceRuntimeState {
   agentId?: string;
 }
 
+export interface RotationState {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  pitch: number;
+}
+
 export interface SessionState {
   project: string;
   socketPath: string;
@@ -40,7 +48,9 @@ export interface SessionState {
   faces: FaceRuntimeState[];
   ipcSocket?: string;
   folded: boolean;
-  rotation: { x: number; y: number; z: number };
+  foldProgress: number;
+  rotation: RotationState;
+  viewerPid?: number;
   startedAt?: string;
 }
 
@@ -51,7 +61,9 @@ export interface CubemuxStatus {
   window: string;
   faces: FaceRuntimeState[];
   folded: boolean;
-  rotation: { x: number; y: number; z: number };
+  foldProgress: number;
+  rotation: RotationState;
+  viewerRunning: boolean;
   ipcSocket?: string;
 }
 
@@ -61,7 +73,16 @@ export type IpcRequest =
   | { method: "send"; index: number; text: string }
   | { method: "capture"; index: number }
   | { method: "face.get"; index: number }
-  | { method: "face.set"; index: number; type: FaceType };
+  | { method: "face.set"; index: number; type: FaceType }
+  | { method: "fold" }
+  | { method: "unfold" }
+  | {
+      method: "rotate";
+      axis?: "x" | "y" | "z";
+      degrees?: number;
+      yaw?: number;
+      pitch?: number;
+    };
 
 export type IpcResponse =
   | { ok: true; data: unknown }

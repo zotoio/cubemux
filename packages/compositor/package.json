@@ -21,6 +21,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@cubemux/core": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^22.15.29",
     "typescript": "^5.8.3",

@@ -126,6 +126,43 @@ type = "shell"
   console.log("smoke: mapping command");
   run("node", [cli, "mapping"], { cwd: root });
 
+  console.log("smoke: fold + rotate + unfold");
+  run("node", [cli, "-C", configPath, "--cwd", tmp, "fold"], { cwd: root });
+  const folded = JSON.parse(
+    run("node", [cli, "-C", configPath, "--cwd", tmp, "status", "--json"], {
+      cwd: root,
+    }),
+  );
+  if (!folded.folded) throw new Error("status.folded should be true after fold");
+
+  run("node", [
+    cli,
+    "-C",
+    configPath,
+    "--cwd",
+    tmp,
+    "rotate",
+    "--yaw",
+    "30",
+    "--pitch",
+    "10",
+  ]);
+  const rotated = JSON.parse(
+    run("node", [cli, "-C", configPath, "--cwd", tmp, "status", "--json"], {
+      cwd: root,
+    }),
+  );
+  if (rotated.rotation.yaw !== 30) throw new Error("rotation.yaw should be 30");
+  if (rotated.rotation.pitch !== 10) throw new Error("rotation.pitch should be 10");
+
+  run("node", [cli, "-C", configPath, "--cwd", tmp, "unfold"], { cwd: root });
+  const unfolded = JSON.parse(
+    run("node", [cli, "-C", configPath, "--cwd", tmp, "status", "--json"], {
+      cwd: root,
+    }),
+  );
+  if (unfolded.folded) throw new Error("status.folded should be false after unfold");
+
   console.log("smoke: stop session");
   run("node", [cli, "-C", configPath, "--cwd", tmp, "stop"], { cwd: root });
 

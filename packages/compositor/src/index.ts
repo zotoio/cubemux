@@ -1,48 +1,119 @@
+import {
+  isViewerRunning,
+  startCubeViewer,
+  stopCubeViewer,
+} from "./viewer.js";
+
 /**
- * @cubemux/compositor — GPU cube compositor stub.
+ * @cubemux/compositor — GPU cube viewer integration.
  *
- * MVP ships the session plane (tmux grid) only. This package documents the
- * face→cube mapping and exposes stub APIs for fold/unfold/rotate that the CLI
- * records in session state. A future implementation will use wgpu + Kitty
- * graphics or a native transparent window.
+ * The native wgpu/winit viewer lives in `packages/cube-viewer` (Rust).
+ * Kitty graphics protocol support is planned; for now use the native
+ * transparent window fallback on Linux desktops.
  */
 
 export type CompositorMode = "grid" | "cube";
 
+export interface CompositorRotation {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  pitch: number;
+}
+
 export interface CompositorState {
   mode: CompositorMode;
-  rotation: { x: number; y: number; z: number };
+  folded: boolean;
+  foldProgress: number;
+  rotation: CompositorRotation;
 }
 
-export interface CompositorStub {
-  readonly state: CompositorState;
-  fold(): CompositorState;
-  unfold(): CompositorState;
-  rotate(axis: "x" | "y" | "z", degrees: number): CompositorState;
+export interface CompositorOptions {
+  projectRoot: string;
+  project: string;
 }
 
-export function createCompositorStub(): CompositorStub {
-  const state: CompositorState = {
+export class Compositor {
+  private state: CompositorState = {
     mode: "grid",
-    rotation: { x: 0, y: 0, z: 0 },
+    folded: false,
+    foldProgress: 0,
+    rotation: { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 },
   };
 
-  return {
-    state,
-    fold() {
-      state.mode = "cube";
-      return { ...state };
-    },
-    unfold() {
-      state.mode = "grid";
-      return { ...state };
-    },
-    rotate(axis, degrees) {
-      state.rotation[axis] = (state.rotation[axis] + degrees) % 360;
-      return { ...state };
-    },
-  };
+  constructor(private readonly options: CompositorOptions) {}
+
+  getState(): CompositorState {
+    return { ...this.state, rotation: { ...this.state.rotation } };
+  }
+
+  fold(): CompositorState {
+    this.state.mode = "cube";
+    this.state.folded = true;
+    startCubeViewer(this.options.projectRoot, this.options.project);
+    return this.getState();
+  }
+
+  unfold(): CompositorState {
+    this.state.mode = "grid";
+    this.state.folded = false;
+    this.state.foldProgress = 0;
+    stopCubeViewer(this.options.projectRoot, this.options.project);
+    return this.getState();
+  }
+
+  rotate(input: {
+    axis?: "x" | "y" | "z";
+    degrees?: number;
+    yaw?: number;
+    pitch?: number;
+  }): CompositorState {
+    if (input.yaw !== undefined) {
+      this.state.rotation.yaw = (this.state.rotation.yaw + input.yaw) % 360;
+      this.state.rotation.y = this.state.rotation.yaw;
+    }
+    if (input.pitch !== undefined) {
+      this.state.rotation.pitch = (this.state.rotation.pitch + input.pitch) % 360;
+      this.state.rotation.x = this.state.rotation.pitch;
+    }
+    if (input.axis && input.degrees !== undefined) {
+      this.state.rotation[input.axis] =
+        (this.state.rotation[input.axis] + input.degrees) % 360;
+      if (input.axis === "y") {
+        this.state.rotation.yaw = this.state.rotation.y;
+      }
+      if (input.axis === "x") {
+        this.state.rotation.pitch = this.state.rotation.x;
+      }
+    }
+    return this.getState();
+  }
+
+  openViewer(): number {
+    return startCubeViewer(this.options.projectRoot, this.options.project);
+  }
+
+  closeViewer(): void {
+    stopCubeViewer(this.options.projectRoot, this.options.project);
+  }
+
+  viewerRunning(): boolean {
+    return isViewerRunning(this.options.projectRoot, this.options.project);
+  }
 }
+
+export function createCompositor(options: CompositorOptions): Compositor {
+  return new Compositor(options);
+}
+
+export {
+  cubeViewerBinary,
+  isViewerRunning,
+  startCubeViewer,
+  stopCubeViewer,
+  viewerPidFile,
+} from "./viewer.js";
 
 export {
   CUBE_FACE_MAPPING,

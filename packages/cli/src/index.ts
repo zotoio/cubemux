@@ -153,16 +153,27 @@ faceCmd
   });
 
 program
-  .command("fold")
-  .description("Fold grid into cube (stub — compositor not implemented)")
+  .command("cube")
+  .description("Open the transparent wgpu cube viewer (without toggling fold state)")
   .action((_args, cmd) => {
-    const result = session(rootOpts(cmd)).fold();
+    const result = session(rootOpts(cmd)).cube();
     console.log(result.message);
   });
 
 program
+  .command("fold")
+  .description("Fold grid into animated cube view (starts wgpu viewer)")
+  .action((_args, cmd) => {
+    const result = session(rootOpts(cmd)).fold();
+    console.log(result.message);
+    if (result.viewerPid) {
+      console.log(`viewer pid: ${result.viewerPid}`);
+    }
+  });
+
+program
   .command("unfold")
-  .description("Unfold cube back to grid (stub)")
+  .description("Unfold cube back to grid-centric mode")
   .action((_args, cmd) => {
     const result = session(rootOpts(cmd)).unfold();
     console.log(result.message);
@@ -170,25 +181,37 @@ program
 
 program
   .command("rotate")
-  .description("Rotate cube (stub — stores rotation for future compositor)")
-  .requiredOption("--axis <axis>", "rotation axis: x, y, or z")
-  .option("--degrees <n>", "degrees to rotate", "90")
+  .description("Rotate cube orientation (yaw/pitch or legacy axis)")
+  .option("--axis <axis>", "rotation axis: x (pitch), y (yaw), or z")
+  .option("--degrees <n>", "degrees to rotate when using --axis", "90")
+  .option("--yaw <n>", "yaw degrees (horizontal)")
+  .option("--pitch <n>", "pitch degrees (vertical)")
   .action((opts, cmd) => {
-    const axis = opts.axis as "x" | "y" | "z";
-    if (!["x", "y", "z"].includes(axis)) {
+    const hasAxis = opts.axis !== undefined;
+    const hasYawPitch = opts.yaw !== undefined || opts.pitch !== undefined;
+    if (!hasAxis && !hasYawPitch) {
+      console.error("Provide --yaw/--pitch or --axis with --degrees");
+      process.exit(1);
+    }
+    if (hasAxis && !["x", "y", "z"].includes(opts.axis)) {
       console.error("axis must be x, y, or z");
       process.exit(1);
     }
-    const result = session(rootOpts(cmd)).rotate(axis, Number(opts.degrees));
+    const result = session(rootOpts(cmd)).rotate({
+      axis: opts.axis as "x" | "y" | "z" | undefined,
+      degrees: opts.degrees !== undefined ? Number(opts.degrees) : undefined,
+      yaw: opts.yaw !== undefined ? Number(opts.yaw) : undefined,
+      pitch: opts.pitch !== undefined ? Number(opts.pitch) : undefined,
+    });
     console.log(result.message);
     console.log(
-      `rotation: x=${result.rotation.x} y=${result.rotation.y} z=${result.rotation.z}`,
+      `rotation: yaw=${result.rotation.yaw} pitch=${result.rotation.pitch} roll(z)=${result.rotation.z}`,
     );
   });
 
 program
   .command("mapping")
-  .description("Show grid face → cube face mapping (compositor stub)")
+  .description("Show grid face → cube face mapping")
   .action(() => {
     console.log(describeFaceMapping());
     console.log("");

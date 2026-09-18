@@ -1,5 +1,7 @@
 node_modules/
 dist/
+packages/cube-viewer/target/
+packages/compositor/bin/
 *.tsbuildinfo
 .cubemux/
 .env

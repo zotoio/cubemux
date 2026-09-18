@@ -31,6 +31,16 @@ import {
   sendKeys,
   tmuxExists,
 } from "./tmux.js";
+import {
+  isViewerRunning,
+  startCubeViewer,
+  stopCubeViewer,
+} from "./viewer.js";
+import type { RotationState } from "./types.js";
+
+function defaultRotation(): RotationState {
+  return { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
+}
 
 const SESSION_NAME = "cubemux";
 const DEFAULT_WINDOW = "grid";
@@ -83,7 +93,9 @@ export class CubemuxSession {
       window: this.windowName,
       faces,
       folded: state?.folded ?? false,
-      rotation: state?.rotation ?? { x: 0, y: 0, z: 0 },
+      foldProgress: state?.foldProgress ?? 0,
+      rotation: state?.rotation ?? defaultRotation(),
+      viewerRunning: isViewerRunning(this.projectRoot, cfg.session.project),
       ipcSocket: state?.ipcSocket ?? this.ipcPath,
     };
   }
@@ -138,7 +150,8 @@ export class CubemuxSession {
       faces,
       ipcSocket: this.ipcPath,
       folded: false,
-      rotation: { x: 0, y: 0, z: 0 },
+      foldProgress: 0,
+      rotation: defaultRotation(),
       startedAt: new Date().toISOString(),
     };
 
@@ -148,6 +161,7 @@ export class CubemuxSession {
   }
 
   async stop(): Promise<void> {
+    stopCubeViewer(this.projectRoot, this.config.session.project);
     this.stopIpcDaemon();
     killSession(this.socketPath);
     const state = readState(this.projectRoot);
@@ -218,38 +232,89 @@ export class CubemuxSession {
     return updated;
   }
 
-  fold(): { folded: boolean; message: string } {
+  cube(): { viewerPid: number; message: string } {
+    this.requireState();
+    const pid = startCubeViewer(this.projectRoot, this.config.session.project);
+    const state = readState(this.projectRoot)!;
+    writeState(this.projectRoot, { ...state, viewerPid: pid });
+    return {
+      viewerPid: pid,
+      message: `Cube viewer started (pid ${pid}). Drag to rotate; arrow keys for yaw/pitch.`,
+    };
+  }
+
+  fold(): { folded: boolean; foldProgress: number; viewerPid?: number; message: string } {
     const state = this.requireState();
-    writeState(this.projectRoot, { ...state, folded: true });
+    let viewerPid = state.viewerPid;
+    try {
+      viewerPid = startCubeViewer(this.projectRoot, this.config.session.project);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      writeState(this.projectRoot, { ...state, folded: true, foldProgress: 0 });
+      return {
+        folded: true,
+        foldProgress: 0,
+        message: `Fold requested but viewer failed to start: ${msg}. State marked folded for headless/IPC control.`,
+      };
+    }
+    writeState(this.projectRoot, {
+      ...state,
+      folded: true,
+      foldProgress: 0,
+      viewerPid,
+    });
     return {
       folded: true,
+      foldProgress: 0,
+      viewerPid,
       message:
-        "Fold stub: compositor cube fold not implemented. Grid session unchanged.",
+        "Folding into cube view. tmux grid remains active; use cubemux attach for flat grid.",
     };
   }
 
-  unfold(): { folded: boolean; message: string } {
+  unfold(): { folded: boolean; foldProgress: number; message: string } {
     const state = this.requireState();
-    writeState(this.projectRoot, { ...state, folded: false });
+    stopCubeViewer(this.projectRoot, this.config.session.project);
+    writeState(this.projectRoot, {
+      ...state,
+      folded: false,
+      foldProgress: 0,
+      viewerPid: undefined,
+    });
     return {
       folded: false,
-      message:
-        "Unfold stub: compositor cube unfold not implemented. Grid session unchanged.",
+      foldProgress: 0,
+      message: "Unfolded to grid-centric mode. Cube viewer stopped.",
     };
   }
 
-  rotate(axis: "x" | "y" | "z", degrees: number): {
-    rotation: { x: number; y: number; z: number };
-    message: string;
-  } {
+  rotate(input: {
+    axis?: "x" | "y" | "z";
+    degrees?: number;
+    yaw?: number;
+    pitch?: number;
+  }): { rotation: RotationState; message: string } {
     const state = this.requireState();
     const rotation = { ...state.rotation };
-    rotation[axis] = (rotation[axis] + degrees) % 360;
+
+    if (input.yaw !== undefined) {
+      rotation.yaw = (rotation.yaw + input.yaw) % 360;
+      rotation.y = rotation.yaw;
+    }
+    if (input.pitch !== undefined) {
+      rotation.pitch = (rotation.pitch + input.pitch) % 360;
+      rotation.x = rotation.pitch;
+    }
+    if (input.axis !== undefined && input.degrees !== undefined) {
+      rotation[input.axis] = (rotation[input.axis] + input.degrees) % 360;
+      if (input.axis === "y") rotation.yaw = rotation.y;
+      if (input.axis === "x") rotation.pitch = rotation.x;
+    }
+
     writeState(this.projectRoot, { ...state, rotation });
     return {
       rotation,
-      message:
-        "Rotate stub: GPU compositor rotation not implemented. Rotation stored for future compositor.",
+      message: "Rotation updated. Cube viewer reads state.json for orientation.",
     };
   }
 

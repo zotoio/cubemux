@@ -28,6 +28,10 @@ importers:
         version: 5.9.3
 
   packages/compositor:
+    dependencies:
+      '@cubemux/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       '@types/node':
         specifier: ^22.15.29

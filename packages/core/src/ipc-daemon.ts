@@ -40,6 +40,17 @@ async function main(): Promise<void> {
         return session.getFace(request.index);
       case "face.set":
         return session.setFaceType(request.index, request.type);
+      case "fold":
+        return session.fold();
+      case "unfold":
+        return session.unfold();
+      case "rotate":
+        return session.rotate({
+          axis: request.axis,
+          degrees: request.degrees,
+          yaw: request.yaw,
+          pitch: request.pitch,
+        });
       default:
         throw new Error("Unknown IPC method");
     }

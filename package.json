@@ -9,7 +9,8 @@
   },
   "packageManager": "pnpm@10.33.3",
   "scripts": {
-    "build": "pnpm -r run build",
+    "build": "pnpm build:viewer && pnpm -r run build",
+    "build:viewer": "cd packages/cube-viewer && cargo build --release && mkdir -p ../compositor/bin && cp -f target/release/cubemux-cube-viewer ../compositor/bin/",
     "test": "pnpm -r run test",
     "typecheck": "pnpm -r run typecheck",
     "smoke": "node scripts/smoke.mjs"

@@ -6,6 +6,7 @@ export type {
   FaceType,
   IpcRequest,
   IpcResponse,
+  RotationState,
   SessionConfig,
   SessionState,
 } from "./types.js";
@@ -46,3 +47,11 @@ export {
 } from "./tmux.js";
 
 export { CubemuxSession, createSession } from "./session.js";
+
+export {
+  cubeViewerBinary,
+  isViewerRunning,
+  startCubeViewer,
+  stopCubeViewer,
+  viewerPidFile,
+} from "./viewer.js";
