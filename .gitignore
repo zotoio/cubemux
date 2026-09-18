@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.cubemux/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+coverage/
+.pnpm-store/
